@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/bash -e
 
 function cleanup {
   docker compose down -v --remove-orphans > /dev/null 2>&1

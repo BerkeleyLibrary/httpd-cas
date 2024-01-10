@@ -1,0 +1,69 @@
+name: Build
+on: [ push, pull_request, workflow_dispatch ]
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  # TODO: DRY w/release.yml
+  setup:
+    runs-on: ubuntu-latest
+
+    steps:
+      # See https://github.com/docker/build-push-action/blob/v2.10.0/TROUBLESHOOTING.md#repository-name-must-be-lowercase
+      - name: Sanitize image name
+        uses: actions/github-script@v6
+        id: image-name
+        with:
+          result-encoding: string
+          script: return '${{ env.REGISTRY }}/${{ github.repository }}'.toLowerCase()
+
+      - name: Get short SHA
+        run: |
+          echo SHORT_SHA="${GITHUB_SHA:0:7}" >> $GITHUB_ENV
+
+      - name: Get build start time
+        run: |
+          echo BUILD_TIMESTAMP="$(date --utc --iso-8601=seconds)" >> $GITHUB_ENV
+
+    outputs:
+      base_image_name: ${{ steps.image-name.outputs.result }}
+      build_image: ${{ steps.image-name.outputs.result }}:${{ env.SHORT_SHA }}
+
+  test:
+    if: github.event_name != 'release'
+    needs: [ setup ]
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    env:
+      BUILD_IMAGE: ${{ needs.setup.outputs.build_image }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Run tests
+        run: ./test.sh
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: ${{ env.BUILD_IMAGE }}
+          build-args: |
+            BUILD_TIMESTAMP=${{ env.BUILD_TIMESTAMP }}
+            BUILD_URL=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            DOCKER_TAG=${{ env.BUILD_IMAGE }}
+            GIT_BRANCH=${{ github.ref_name }}
+            GIT_COMMIT=${{ github.sha }}
+            GIT_URL=${{ github.repositoryUrl }}
+
+    outputs:
+      build_image: ${{ env.BUILD_IMAGE }}
