@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Build"]
+    types: ["completed"]
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sanitize image name
+        uses: actions/github-script@v6
+        id: image-name
+        with:
+          result-encoding: string
+          script: return '${{ env.REGISTRY }}/${{ github.repository }}'.toLowerCase()
+
+      - name: Get short SHA
+        run: |
+          echo SHORT_SHA="${GITHUB_SHA:0:7}" >> $GITHUB_ENV
+
+    outputs:
+      base_image_name: ${{ steps.image-name.outputs.result }}
+      build_image: ${{ steps.image-name.outputs.result }}:${{ env.SHORT_SHA }}
+
+  push:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    needs: setup
+    permissions:
+      packages: write
+    env:
+      BASE_IMAGE_NAME: ${{ needs.setup.outputs.base_image_name }}
+      BUILD_IMAGE: ${{ needs.setup.outputs.build_image }}
+    steps:
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.BASE_IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{major}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{version}}
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag and push image
+        uses: akhilerm/tag-push-action@v2.1.0
+        with:
+          src: ${{ env.BUILD_IMAGE }}
+          dst: |
+            ${{ steps.meta.outputs.tags }}
