@@ -1,10 +1,14 @@
-FROM httpd:2.4
+FROM registry.access.redhat.com/ubi8/httpd-24
 
-RUN apt -y update && \
-    apt -y upgrade && \
-    apt -y install libapache2-mod-auth-cas && \
-    install -d /var/cache/apache2/mod_auth_cas -o www-data -g www-data
+USER root
+RUN yum -y update && \
+    yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm && \
+    yum -y install \
+        xemacs-nox \
+        mod_auth_cas \
+        vim && \
+    install -d -o apache /var/cache/httpd/mod_auth_cas
 
-COPY httpd.conf /usr/local/apache2/conf/httpd.conf
-
-VOLUME [ "/var/cache/apache2/mod_auth_cas" ]
+USER root
+COPY files/etc/httpd /etc/httpd
+COPY files/var/www /var/www
