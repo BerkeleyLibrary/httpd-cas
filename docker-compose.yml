@@ -3,11 +3,6 @@
 services:
   app:
     build: .
-    environment:
-      - CAS_LOGIN_URL=https://auth.berkeley.edu/cas/
-      - CAS_VALIDATE_URL=https://auth.berkeley.edu/cas/serviceValidate
-      - CAS_PROXY_VALIDATE_URL=https://auth.berkeley.edu/cas/proxyValidate
-      - CAS_ROOT_PROXIED_AS=http://localhost
     ports:
       - 80:8080
     volumes:
