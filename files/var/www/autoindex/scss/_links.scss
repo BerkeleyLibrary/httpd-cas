@@ -1,0 +1,22 @@
+#{$a-tags} {
+     @include link-style;
+
+     &.image-link {
+          @include no-link-style;
+     }
+
+     #footer & {
+          @include no-link-style;
+          color: white;
+          border-bottom: 1px dotted white;
+     }
+}
+
+#{$a-tags-hover} {
+     background: $gold;
+
+     #footer & {
+          color: black;
+          border-bottom: none;
+     }
+}

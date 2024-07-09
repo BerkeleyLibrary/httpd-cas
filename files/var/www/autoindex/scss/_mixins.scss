@@ -1,0 +1,16 @@
+@mixin link-style() {
+     color: black;
+	transition: color 0.25s ease-in-out, background 0.25s ease-in-out;
+	text-decoration: none;
+	box-shadow: inset 0 -4px $gold;
+}
+
+@mixin no-link-style() {
+     box-shadow: none;
+}
+
+@mixin hide() {
+     position: absolute;
+     top: -9999px;
+     left: -9999px;
+}

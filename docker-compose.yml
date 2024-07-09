@@ -9,6 +9,7 @@ services:
       - CAS_PROXY_VALIDATE_URL=https://auth.berkeley.edu/cas/proxyValidate
       - CAS_ROOT_PROXIED_AS=http://localhost
     ports:
-      - 80:80
+      - 80:8080
     volumes:
-      - ./data:/usr/local/apache2/htdocs:ro
+      - ./test/conf/cas-vhost.conf:/etc/httpd/conf.d/cas-vhost.conf:ro
+      - ./test/data:/var/www/html:ro
