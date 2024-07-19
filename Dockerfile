@@ -13,3 +13,4 @@ USER root
 COPY files/etc/httpd /etc/httpd
 COPY files/pre-init /usr/share/container-scripts/httpd/pre-init
 COPY files/var/www /var/www
+RUN rm -rf /etc/httpd/conf.d/welcome.conf
