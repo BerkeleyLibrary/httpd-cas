@@ -4,7 +4,7 @@ services:
   app:
     build: .
     ports:
-      - 80:8080
+      - 8080:8080
     volumes:
       - ./test/conf/cas-vhost.conf:/etc/httpd/conf.d/cas-vhost.conf:ro
       - ./test/data:/var/www/html:ro

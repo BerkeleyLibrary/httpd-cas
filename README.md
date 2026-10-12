@@ -1,12 +1,20 @@
 # Apache w/mod-auth-cas docker image
 
-A Red Hat 8 Universal Base Image running Apache with a few helpful extras:
+The official `httpd:2.4` image with a few helpful extras:
 
 1. mod_auth_cas, configurable at runtime by setting environment variables.
 2. A RemoteIP configuration suitable for running behind NGINX, Traefik, etc.
 3. Our branded auto-index pages.
+4. Python3 installed for writing RewriteMap programs (and other).
 
-Listens on 8080/tcp.
+Listens on 8080/tcp. Existing `/etc/httpd/conf.d/*.conf` configuration mounts
+and `/var/www/html` content mounts are supported.
+
+`mod_auth_cas` 1.3 is built from a checksum-verified upstream release against the
+base image's Apache in a separate build stage. The runtime runs Apache workers
+as `www-data` and initializes the existing `CAS_*` defaults through its entrypoint.
+Apache modules and bundled assets live under `/usr/local/apache2`; the CAS cookie
+cache remains at `/var/cache/httpd/mod_auth_cas/`.
 
 ## CAS Configuration
 

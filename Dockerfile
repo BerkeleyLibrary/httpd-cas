@@ -1,16 +1,45 @@
-FROM registry.access.redhat.com/ubi8/httpd-24
+FROM httpd:2.4 AS cas-build
 
-USER root
-RUN yum -y update && \
-    yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm && \
-    yum -y install \
-        xemacs-nox \
-        mod_auth_cas \
-        vim && \
-    install -d -o apache /var/cache/httpd/mod_auth_cas
+# Build against the official image's Apache, rather than a distro Apache package.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        autoconf automake gcc libtool make pkg-config curl \
+        libapr1-dev libaprutil1-dev libcurl4-openssl-dev libpcre2-dev libssl-dev && \
+    rm -rf /var/lib/apt/lists/*
 
-USER root
+WORKDIR /tmp/mod_auth_cas
+RUN curl -fsSL https://codeload.github.com/apereo/mod_auth_cas/tar.gz/refs/tags/v1.3 -o source.tar.gz && \
+    echo "7fed6c703ba060f4eb891a9c63a0d8cf0434249bd25d1faa6b8ea9075121c93e  source.tar.gz" | sha256sum -c - && \
+    tar -xzf source.tar.gz --strip-components=1 && \
+    autoreconf -fi && \
+    ./configure --with-apxs=/usr/local/apache2/bin/apxs && \
+    make -j"$(nproc)" && make install
+
+FROM httpd:2.4
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        libcurl4t64 \
+        libpcre2-8-0 \
+        python3 && \
+    rm -rf /var/lib/apt/lists/* && \
+    install -d -o www-data -g www-data /var/cache/httpd/mod_auth_cas && \
+    mkdir -p /etc/httpd/conf.modules.d /var/www/html && \
+    sed -n '/^LoadModule /p' conf/httpd.conf > /etc/httpd/conf.modules.d/00-base.conf && \
+    printf '%s\n' \
+        'LoadModule negotiation_module modules/mod_negotiation.so' \
+        'LoadModule include_module modules/mod_include.so' \
+        'LoadModule remoteip_module modules/mod_remoteip.so' \
+        'LoadModule auth_cas_module modules/mod_auth_cas.so' \
+        > /etc/httpd/conf.modules.d/10-cas.conf
+
+COPY --from=cas-build /usr/local/apache2/modules/mod_auth_cas.so /usr/local/apache2/modules/
 COPY files/etc/httpd /etc/httpd
-COPY files/pre-init /usr/share/container-scripts/httpd/pre-init
+COPY files/pre-init /usr/local/bin/pre-init
+COPY --chmod=755 files/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 COPY files/var/www /var/www
-RUN rm -rf /etc/httpd/conf.d/welcome.conf
+RUN ln -sf /etc/httpd/conf/httpd.conf /usr/local/apache2/conf/httpd.conf
+
+EXPOSE 8080
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["httpd-foreground"]
