@@ -1,7 +1,9 @@
 #!/bin/bash
 
+app_url="localhost:8080"
+
 function test_public {
-  if curl -s localhost/public/ | grep -q 'The Regents of the University of California'; then
+  if curl -s "${app_url}/public/" | grep -q 'The Regents of the University of California'; then
     echo "PASS: /public/ serves custom dynamic index page"
   else
     echo "FAILED: /public/ serves custom dynamic index page"
@@ -10,7 +12,7 @@ function test_public {
 }
 
 function test_ucb {
-  if curl -sI localhost/UCB/ | grep -q 'Location: https://auth.berkeley.edu/cas/?service=http%3a%2f%2flocalhost%2fUCB%2f'; then
+  if curl -sI "${app_url}/UCB/" | grep -q "Location: https://auth.berkeley.edu/cas/"; then
     echo "PASS: /UCB/ redirects to auth.berkeley.edu"
   else
     echo "FAILED: /UCB/ redirects to auth.berkeley.edu"
