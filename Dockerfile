@@ -19,19 +19,14 @@ FROM httpd:2.4
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         ca-certificates \
+        libapache2-mod-auth-mellon \
+        libapache2-mod-security2 \
         libcurl4t64 \
         libpcre2-8-0 \
         python3 && \
     rm -rf /var/lib/apt/lists/* && \
     install -d -o www-data -g www-data /var/cache/httpd/mod_auth_cas && \
-    mkdir -p /etc/httpd/conf.modules.d /var/www/html && \
-    sed -n '/^LoadModule /p' conf/httpd.conf > /etc/httpd/conf.modules.d/00-base.conf && \
-    printf '%s\n' \
-        'LoadModule negotiation_module modules/mod_negotiation.so' \
-        'LoadModule include_module modules/mod_include.so' \
-        'LoadModule remoteip_module modules/mod_remoteip.so' \
-        'LoadModule auth_cas_module modules/mod_auth_cas.so' \
-        > /etc/httpd/conf.modules.d/10-cas.conf
+    mkdir -p /var/www/html
 
 COPY --from=cas-build /usr/local/apache2/modules/mod_auth_cas.so /usr/local/apache2/modules/
 COPY files/etc/httpd /etc/httpd
@@ -39,6 +34,7 @@ COPY files/pre-init /usr/local/bin/pre-init
 COPY --chmod=755 files/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 COPY files/var/www /var/www
 RUN ln -sf /etc/httpd/conf/httpd.conf /usr/local/apache2/conf/httpd.conf
+RUN /usr/local/bin/docker-entrypoint.sh httpd -t
 
 EXPOSE 8080
 ENTRYPOINT ["docker-entrypoint.sh"]
