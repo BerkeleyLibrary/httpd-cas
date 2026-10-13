@@ -3,8 +3,11 @@
 services:
   app:
     build: .
+    environment:
+      - MAPS_ROOT=/var/www/html/maps
     ports:
       - 8080:8080
     volumes:
       - ./test/conf/cas-vhost.conf:/etc/httpd/conf.d/cas-vhost.conf:ro
+      - ./test/conf/map-access.py:/usr/local/bin/map-access.py
       - ./test/data:/var/www/html:ro
