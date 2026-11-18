@@ -1,4 +1,4 @@
-FROM httpd:2.4 AS cas-build
+FROM httpd:2.4.71 AS cas-build
 
 # Build against the official image's Apache, rather than a distro Apache package.
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -14,7 +14,7 @@ RUN curl -fsSL https://codeload.github.com/apereo/mod_auth_cas/tar.gz/refs/tags/
     ./configure --with-apxs=/usr/local/apache2/bin/apxs && \
     make -j"$(nproc)" && make install
 
-FROM httpd:2.4
+FROM httpd:2.4.71
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
